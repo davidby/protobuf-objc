@@ -44,6 +44,8 @@ class MessageFieldGenerator : public FieldGenerator {
   void GenerateParsingCodeHeader(io::Printer* printer) const;
   void GenerateSerializationCodeHeader(io::Printer* printer) const;
   void GenerateSerializedSizeCodeHeader(io::Printer* printer) const;
+  void GenerateBuilderGetterHeader(io::Printer* printer) const;
+  void GenerateBuilderClearHeader(io::Printer* printer) const;
 
   void GenerateExtensionSource(io::Printer* printer) const;
   void GenerateSynthesizeSource(io::Printer* printer) const;
@@ -58,6 +60,8 @@ class MessageFieldGenerator : public FieldGenerator {
   void GenerateDescriptionCodeSource(io::Printer* printer) const;
   void GenerateIsEqualCodeSource(io::Printer* printer) const;
   void GenerateHashCodeSource(io::Printer* printer) const;
+  void GenerateBuilderClearSource(io::Printer* printer) const;
+  void GenerateBuilderGetterSource(io::Printer* printer) const;
 
   string GetBoxedType() const;
 
@@ -84,6 +88,8 @@ class RepeatedMessageFieldGenerator : public FieldGenerator {
   void GenerateParsingCodeHeader(io::Printer* printer) const;
   void GenerateSerializationCodeHeader(io::Printer* printer) const;
   void GenerateSerializedSizeCodeHeader(io::Printer* printer) const;
+  void GenerateBuilderGetterHeader(io::Printer* printer) const;
+  void GenerateBuilderClearHeader(io::Printer* printer) const;
 
   void GenerateExtensionSource(io::Printer* printer) const;
   void GenerateSynthesizeSource(io::Printer* printer) const;
@@ -98,6 +104,8 @@ class RepeatedMessageFieldGenerator : public FieldGenerator {
   void GenerateDescriptionCodeSource(io::Printer* printer) const;
   void GenerateIsEqualCodeSource(io::Printer* printer) const;
   void GenerateHashCodeSource(io::Printer* printer) const;
+  void GenerateBuilderClearSource(io::Printer* printer) const;
+  void GenerateBuilderGetterSource(io::Printer* printer) const;
 
   string GetBoxedType() const;
 

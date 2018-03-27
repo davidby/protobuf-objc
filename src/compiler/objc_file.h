@@ -33,6 +33,7 @@ namespace protobuf {
 
 namespace protobuf {
 namespace compiler {
+      class GeneratorContext;
 namespace objectivec {
 
 class FileGenerator {
@@ -43,6 +44,10 @@ class FileGenerator {
   void GenerateSource(io::Printer* printer);
   void GenerateHeader(io::Printer* printer);
   void DetermineDependencies(set<string>* dependencies);
+
+  void GenerateEnumsHeader(io::Printer* printer);
+  void GenerateAggregateHeader(io::Printer* printer, string enumsHeaderName);
+  void GenerateHeaders(GeneratorContext* outputDirectory, string extension, string aggregateHeaderName);    
 
   const string& classname()    { return classname_;    }
 

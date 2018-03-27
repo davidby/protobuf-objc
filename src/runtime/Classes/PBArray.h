@@ -55,6 +55,7 @@ typedef enum _PBArrayValueType
 - (Float32)floatAtIndex:(NSUInteger)index;
 - (Float64)doubleAtIndex:(NSUInteger)index;
 - (BOOL)isEqualToArray:(PBArray *)array;
+- (NSArray*)toNumberArray;
 
 @property (nonatomic,assign,readonly) PBArrayValueType valueType;
 @property (nonatomic,assign,readonly) const void * data;

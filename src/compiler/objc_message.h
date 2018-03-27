@@ -60,6 +60,7 @@ class MessageGenerator {
   void GenerateBuilderHeader(io::Printer* printer);
   void GenerateCommonBuilderMethodsHeader(io::Printer* printer);
   void GenerateBuilderParsingMethodsHeader(io::Printer* printer);
+  void GenerateBuilderPartiallyMergeMethod(io::Printer* printer);
   void GenerateIsInitializedHeader(io::Printer* printer);
 
 
@@ -91,6 +92,7 @@ class MessageGenerator {
   void GenerateBuilderSource(io::Printer* printer);
   void GenerateCommonBuilderMethodsSource(io::Printer* printer);
   void GenerateBuilderParsingMethodsSource(io::Printer* printer);
+  void GenerateBuilderPartiallyMergeMethodSource(io::Printer* printer);
   void GenerateIsInitializedSource(io::Printer* printer);
 
   const Descriptor* descriptor_;

@@ -15,13 +15,18 @@
 // limitations under the License.
 
 #include <google/protobuf/compiler/plugin.h>
-
+#include <iostream>
 #include "objc_generator.h"
 
 using namespace google::protobuf::compiler::objectivec;
 
 int main(int argc, char **argv)
 {
+	if (argc == 2 && strcmp(argv[1], "-version") == 0) {
+		std::cout << "1.1.3" << std::endl;
+		exit(0);
+	}
+
 	ObjectiveCGenerator	generator;
 	return PluginMain(argc, argv, &generator);
 }

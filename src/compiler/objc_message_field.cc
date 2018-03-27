@@ -33,8 +33,14 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
       map<string, string>* variables) {
         std::string name = UnderscoresToCamelCase(descriptor);
         (*variables)["classname"] = ClassName(descriptor->containing_type());
-        (*variables)["name"] = name;
-        (*variables)["capitalized_name"] = UnderscoresToCapitalizedCamelCase(descriptor);
+        if (IsReservedName(name)) {
+          (*variables)["name"] = name + "Property";
+          (*variables)["capitalized_name"] = UnderscoresToCapitalizedCamelCase(descriptor) + "Property";
+        } else {
+          (*variables)["name"] = name;
+          (*variables)["capitalized_name"] = UnderscoresToCapitalizedCamelCase(descriptor);
+        }
+
         (*variables)["list_name"] = UnderscoresToCamelCase(descriptor) + "Array";
         (*variables)["number"] = SimpleItoa(descriptor->number());
         (*variables)["type"] = ClassName(descriptor->message_type());
@@ -77,34 +83,25 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 
 
   void MessageFieldGenerator::GenerateHasPropertyHeader(io::Printer* printer) const {
-    printer->Print(variables_, "- (BOOL) has$capitalized_name$;\n");
+    printer->Print(variables_, "- (BOOL)has$capitalized_name$;\n");
   }
 
 
   void MessageFieldGenerator::GeneratePropertyHeader(io::Printer* printer) const {
-    printer->Print(variables_, "@property (readonly, strong)$storage_attribute$ $storage_type$ $name$;\n");
+    printer->Print(variables_, "@property (nonatomic, readonly)$storage_attribute$ $storage_type$ $name$;\n");
   }
 
 
   void MessageFieldGenerator::GenerateExtensionSource(io::Printer* printer) const {
-    printer->Print(variables_,
-      "@property (strong)$storage_attribute$ $storage_type$ $name$;\n");
+    printer->Print(variables_,"@property (nonatomic, readwrite) BOOL has$capitalized_name$;\n");
+    printer->Print(variables_,"@property (nonatomic, readwrite)$storage_attribute$ $storage_type$ $name$;\n");
   }
-
 
   void MessageFieldGenerator::GenerateMembersHeader(io::Printer* printer) const {
   }
 
 
   void MessageFieldGenerator::GenerateSynthesizeSource(io::Printer* printer) const {
-    printer->Print(variables_,
-      "- (BOOL) has$capitalized_name$ {\n"
-      "  return !!has$capitalized_name$_;\n"
-      "}\n"
-      "- (void) setHas$capitalized_name$:(BOOL) value_ {\n"
-      "  has$capitalized_name$_ = !!value_;\n"
-      "}\n"
-      "@synthesize $name$;\n");
   }
 
   void MessageFieldGenerator::GenerateInitializationSource(io::Printer* printer) const {
@@ -114,48 +111,61 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 
   void MessageFieldGenerator::GenerateBuilderMembersHeader(io::Printer* printer) const {
     printer->Print(variables_,
-      "- (BOOL) has$capitalized_name$;\n"
-      "- ($storage_type$) $name$;\n"
       "- ($classname$_Builder*) set$capitalized_name$:($storage_type$) value;\n"
       "- ($classname$_Builder*) set$capitalized_name$Builder:($type$_Builder*) builderForValue;\n"
-      "- ($classname$_Builder*) merge$capitalized_name$:($storage_type$) value;\n"
-      "- ($classname$_Builder*) clear$capitalized_name$;\n");
+      "- ($classname$_Builder*) merge$capitalized_name$:($storage_type$) value;\n");
+  }
+
+  void MessageFieldGenerator::GenerateBuilderGetterHeader(io::Printer* printer) const {
+    printer->Print(variables_,"- ($storage_type$) $name$;\n"
+      "- (BOOL)has$capitalized_name$;\n");  }
+
+  void MessageFieldGenerator::GenerateBuilderClearHeader(io::Printer* printer) const {
+    printer->Print(variables_,"- ($classname$_Builder*)clear$capitalized_name$;\n");
+  }
+
+  void MessageFieldGenerator::GenerateBuilderGetterSource(io::Printer* printer) const {
+    printer->Print(variables_,
+        "- ($storage_type$) $name$ {\n"
+        "  return builder_result.$name$;\n"
+        "}\n");
+    printer->Print(variables_,
+      "- (BOOL)has$capitalized_name$ {\n"
+      " return builder_result.has$capitalized_name$;\n"
+      "}\n");
   }
 
   void MessageFieldGenerator::GenerateBuilderMembersSource(io::Printer* printer) const {
     printer->Print(variables_,
-      "- (BOOL) has$capitalized_name$ {\n"
-      "  return result.has$capitalized_name$;\n"
-      "}\n"
-      "- ($storage_type$) $name$ {\n"
-      "  return result.$name$;\n"
-      "}\n"
       "- ($classname$_Builder*) set$capitalized_name$:($storage_type$) value {\n"
-      "  result.has$capitalized_name$ = YES;\n"
-      "  result.$name$ = value;\n"
+      "  builder_result.has$capitalized_name$ = YES;\n"
+      "  builder_result.$name$ = value;\n"
       "  return self;\n"
       "}\n"
       "- ($classname$_Builder*) set$capitalized_name$Builder:($type$_Builder*) builderForValue {\n"
       "  return [self set$capitalized_name$:[builderForValue build]];\n"
       "}\n"
       "- ($classname$_Builder*) merge$capitalized_name$:($storage_type$) value {\n"
-      "  if (result.has$capitalized_name$ &&\n"
-      "      result.$name$ != [$type$ defaultInstance]) {\n"
-      "    result.$name$ =\n"
-      "      [[[$type$ builderWithPrototype:result.$name$] mergeFrom:value] buildPartial];\n"
+      "  if (builder_result.has$capitalized_name$ &&\n"
+      "      builder_result.$name$ != [$type$ defaultInstance]) {\n"
+      "    builder_result.$name$ =\n"
+      "      [[[$type$ builderWithPrototype:builder_result.$name$] mergeFrom:value] buildPartial];\n"
       "  } else {\n"
-      "    result.$name$ = value;\n"
+      "    builder_result.$name$ = value;\n"
       "  }\n"
-      "  result.has$capitalized_name$ = YES;\n"
-      "  return self;\n"
-      "}\n"
-      "- ($classname$_Builder*) clear$capitalized_name$ {\n"
-      "  result.has$capitalized_name$ = NO;\n"
-      "  result.$name$ = [$type$ defaultInstance];\n"
+      "  builder_result.has$capitalized_name$ = YES;\n"
       "  return self;\n"
       "}\n");
   }
 
+  void MessageFieldGenerator::GenerateBuilderClearSource(io::Printer* printer) const {
+    printer->Print(variables_,
+          "- ($classname$_Builder*)clear$capitalized_name$ {\n"
+          "  builder_result.has$capitalized_name$ = NO;\n"
+	      "  builder_result.$name$ = [$type$ defaultInstance];\n"
+          "  return self;\n"
+          "}\n");
+  }
 
   void MessageFieldGenerator::GenerateMergingCodeHeader(io::Printer* printer) const {
   }
@@ -184,8 +194,8 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
   void MessageFieldGenerator::GenerateParsingCodeSource(io::Printer* printer) const {
     printer->Print(variables_,
       "$type$_Builder* subBuilder = [$type$ builder];\n"
-      "if (self.has$capitalized_name$) {\n"
-      "  [subBuilder mergeFrom:self.$name$];\n"
+      "if (self.builder_result.has$capitalized_name$) {\n"
+      "  [subBuilder mergeFrom:self.builder_result.$name$];\n"
       "}\n");
 
     if (descriptor_->type() == FieldDescriptor::TYPE_GROUP) {
@@ -235,13 +245,11 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
       "}\n");
   }
 
-
   void MessageFieldGenerator::GenerateIsEqualCodeSource(io::Printer* printer) const {
     printer->Print(variables_,
       "self.has$capitalized_name$ == otherMessage.has$capitalized_name$ &&\n"
       "(!self.has$capitalized_name$ || [self.$name$ isEqual:otherMessage.$name$]) &&");
   }
-
 
   void MessageFieldGenerator::GenerateHashCodeSource(io::Printer* printer) const {
     printer->Print(variables_,
@@ -250,15 +258,12 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
       "}\n");
   }
 
-
   void MessageFieldGenerator::GenerateMembersSource(io::Printer* printer) const {
   }
-
 
   string MessageFieldGenerator::GetBoxedType() const {
     return ClassName(descriptor_->message_type());
   }
-
 
   RepeatedMessageFieldGenerator::RepeatedMessageFieldGenerator(const FieldDescriptor* descriptor)
     : descriptor_(descriptor) {
@@ -269,22 +274,20 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
   RepeatedMessageFieldGenerator::~RepeatedMessageFieldGenerator() {
   }
 
-
   void RepeatedMessageFieldGenerator::GenerateHasFieldHeader(io::Printer* printer) const {
   }
 
 
   void RepeatedMessageFieldGenerator::GenerateFieldHeader(io::Printer* printer) const {
-	//check if object array vs primitive array
-	if(isObjectArray(descriptor_)){
-		printer->Print(variables_,
-	      "NSMutableArray * $list_name$;\n");
-	}else{
-		printer->Print(variables_,
-	      "PBAppendableArray * $list_name$;\n");
-	}
+  	//check if object array vs primitive array
+  	if(isObjectArray(descriptor_)){
+  		printer->Print(variables_,
+  	      "NSMutableArray * $list_name$;\n");
+  	}else{
+  		printer->Print(variables_,
+  	      "PBAppendableArray * $list_name$;\n");
+  	}
   }
-
 
   void RepeatedMessageFieldGenerator::GenerateHasPropertyHeader(io::Printer* printer) const {
   }
@@ -293,9 +296,9 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
   void RepeatedMessageFieldGenerator::GeneratePropertyHeader(io::Printer* printer) const {
 		//check if object array vs primitive array
 		if(isObjectArray(descriptor_)){
-			printer->Print(variables_, "@property (readonly, strong) NSArray * $name$;\n");
+			printer->Print(variables_, "@property (nonatomic, readonly, nullable) NSArray<$storage_type$> * $name$;\n");
 		}else{
-			printer->Print(variables_, "@property (readonly, strong) PBArray * $name$;\n");
+			printer->Print(variables_, "@property (nonatomic, readonly, nullable) PBArray * $name$;\n");
 		}
   }
 
@@ -304,7 +307,7 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 		//check if object array vs primitive array
 		if(isObjectArray(descriptor_)){
     		printer->Print(variables_,
-      			"@property (strong) NSMutableArray * $list_name$;\n");
+      			"@property (nonatomic, readwrite) NSMutableArray * $list_name$;\n");
 		}else{
 			printer->Print(variables_,
 		      "@property (strong) PBAppendableArray * $list_name$;\n");
@@ -313,8 +316,6 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 
 
   void RepeatedMessageFieldGenerator::GenerateSynthesizeSource(io::Printer* printer) const {
-    printer->Print(variables_, "@synthesize $list_name$;\n");
-    printer->Print(variables_, "@dynamic $name$;\n");
   }
 
   void RepeatedMessageFieldGenerator::GenerateInitializationSource(io::Printer* printer) const {
@@ -331,57 +332,72 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 		if(isObjectArray(descriptor_)){
     		printer->Print(variables_,
 		      "- (NSArray *)$name$ {\n"
-		      "  return $list_name$;\n"
+		      "  return self.$list_name$;\n"
 		      "}\n"
 		      "- ($storage_type$)$name$AtIndex:(NSUInteger)index {\n"
-		      "  return [$list_name$ objectAtIndex:index];\n"
+		      "  return self.$list_name$[index];\n"
 		      "}\n");
 		}
   }
 
+  void RepeatedMessageFieldGenerator::GenerateBuilderClearSource(io::Printer* printer) const {
+    printer->Print(variables_,
+      "- ($classname$_Builder *)clear$capitalized_name$ {\n"
+      "  builder_result.$list_name$ = nil;\n"
+      "  return self;\n"
+      "}\n");
+  }
 
   void RepeatedMessageFieldGenerator::GenerateBuilderMembersHeader(io::Printer* printer) const {
 		//check if object array vs primitive array
 		if(isObjectArray(descriptor_)){
    		 printer->Print(variables_,
-		      "- (NSMutableArray *)$name$;\n"
-		      "- ($storage_type$)$name$AtIndex:(NSUInteger)index;\n"
 		      "- ($classname$_Builder *)add$capitalized_name$:($storage_type$)value;\n"
-		      "- ($classname$_Builder *)set$capitalized_name$Array:(NSArray *)array;\n"
-		      "- ($classname$_Builder *)clear$capitalized_name$;\n");
+		      "- ($classname$_Builder *)set$capitalized_name$Array:(NSArray *)array;\n");
 		}else{
 		  printer->Print(variables_,
-		      "- (PBAppendableArray *)$name$;\n"
-		      "- ($storage_type$)$name$AtIndex:(NSUInteger)index;\n"
 		      "- ($classname$_Builder *)add$capitalized_name$:($storage_type$)value;\n"
-		      "- ($classname$_Builder *)set$capitalized_name$Array:(NSArray *)array;\n"
-		      "- ($classname$_Builder *)set$capitalized_name$Values:(const $storage_type$ *)values count:(NSUInteger)count;\n"
-		      "- ($classname$_Builder *)clear$capitalized_name$;\n");
-		
+		      "- ($classname$_Builder *)set$capitalized_name$Array:(NSArray *)array;\n");
 		}
+  }
+
+  void RepeatedMessageFieldGenerator::GenerateBuilderGetterHeader(io::Printer* printer) const {
+    if(isObjectArray(descriptor_)) {
+      printer->Print(variables_,"- (NSMutableArray *)$name$;\n");
+    } else {
+      printer->Print(variables_,"- (PBAppendableArray *)$name$;\n");
+    }
+  }
+
+  void RepeatedMessageFieldGenerator::GenerateBuilderClearHeader(io::Printer* printer) const {
+    printer->Print(variables_,"- ($classname$_Builder*)clear$capitalized_name$;\n");
+  }
+
+  void RepeatedMessageFieldGenerator::GenerateBuilderGetterSource(io::Printer* printer) const {
+    if(isObjectArray(descriptor_)) {
+      printer->Print(variables_,
+        "- (NSMutableArray *)$name$ {\n"
+        "  return builder_result.$list_name$;\n"
+        "}\n");
+    } else {
+      printer->Print(variables_,
+        "- (PBAppendableArray *)$name$ {\n"
+        "  return builder_result.$list_name$;\n"
+        "}\n");
+    }
   }
 
   void RepeatedMessageFieldGenerator::GenerateBuilderMembersSource(io::Printer* printer) const {
     printer->Print(variables_,
-      "- (NSMutableArray *)$name$ {\n"
-      "  return result.$list_name$;\n"
-      "}\n"
-      "- ($storage_type$)$name$AtIndex:(NSUInteger)index {\n"
-      "  return [result $name$AtIndex:index];\n"
-      "}\n"
       "- ($classname$_Builder *)add$capitalized_name$:($storage_type$)value {\n"
-      "  if (result.$list_name$ == nil) {\n"
-      "    result.$list_name$ = [[NSMutableArray alloc]init];\n"
+      "  if (builder_result.$list_name$ == nil) {\n"
+      "    builder_result.$list_name$ = [[NSMutableArray alloc]init];\n"
       "  }\n"
-      "  [result.$list_name$ addObject:value];\n"
+      "  [builder_result.$list_name$ addObject:value];\n"
       "  return self;\n"
       "}\n"
       "- ($classname$_Builder *)set$capitalized_name$Array:(NSArray *)array {\n"
-      "  result.$list_name$ = [[NSMutableArray alloc]init];\n"
-      "  return self;\n"
-      "}\n"
-      "- ($classname$_Builder *)clear$capitalized_name$ {\n"
-      "  result.$list_name$ = nil;\n"
+      "  builder_result.$list_name$ = [[NSMutableArray alloc]initWithArray:array];\n"
       "  return self;\n"
       "}\n");
   }
@@ -412,22 +428,13 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 	if(isObjectArray(descriptor_)){
 		printer->Print(variables_,
 	      "if (other.$list_name$.count > 0) {\n"
-	      "  if (result.$list_name$ == nil) {\n"
-	      "    result.$list_name$ = [[NSMutableArray alloc] initWithArray:other.$list_name$];\n"
-	      "  } else {\n"
-	      "    [result.$list_name$ addObjectsFromArray:other.$list_name$];\n"
-	      "  }\n"
+	      "  builder_result.$list_name$ = [[NSMutableArray alloc] initWithArray:other.$list_name$];\n"
       	  "}\n");
 	}else{
 		printer->Print(variables_,
 	      "if (other.$list_name$.count > 0) {\n"
-	      "  if (result.$list_name$ == nil) {\n"
-	      "    result.$list_name$ = [other.$list_name$ copy];\n"
-	      "  } else {\n"
-	      "    [result.$list_name$ appendArray:other.$list_name$];\n"
-	      "  }\n"
+	      "  builder_result.$list_name$ = [other.$list_name$ copy];\n"
       	  "}\n");
-    	
 	}
   }
 
@@ -476,7 +483,7 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
   }
 
   void RepeatedMessageFieldGenerator::GenerateIsEqualCodeSource(io::Printer* printer) const {
-    printer->Print(variables_, "[self.$list_name$ isEqualToArray:otherMessage.$list_name$] &&");
+    printer->Print(variables_, "(self.$list_name$ == otherMessage.$list_name$ || [self.$list_name$ isEqualToArray:otherMessage.$list_name$]) &&");
   }
 
   void RepeatedMessageFieldGenerator::GenerateHashCodeSource(io::Printer* printer) const {

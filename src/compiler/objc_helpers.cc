@@ -25,6 +25,9 @@
 #include <google/protobuf/stubs/strutil.h>
 
 #include "google/protobuf/objectivec-descriptor.pb.h"
+#include <string>
+#include <sstream>
+
 
 namespace google { namespace protobuf { namespace compiler { namespace objectivec {
   namespace {
@@ -174,7 +177,27 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
   }
 
   bool IsRetainedName(const string& name) {
-    static std::string retainednames[] = { "new", "alloc", "copy", "mutableCopy" };
+    static std::string retainedPrefixes[] = { "new", "alloc", "copy", "mutableCopy" };
+    for (size_t i = 0; i < sizeof(retainedPrefixes) / sizeof(retainedPrefixes[0]); ++i) {
+      std::string retainedPrefix = retainedPrefixes[i];
+      if (name.compare(0, retainedPrefix.length(), retainedPrefix) == 0) {
+        if (name.length() == retainedPrefix.length()) {
+          return true;
+        } else if (name.length() > retainedPrefix.length()) {
+          char characterAfterRetainedPrefix = name.at(retainedPrefix.length());
+          if (isupper(characterAfterRetainedPrefix)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  bool IsReservedName(const string& name) {
+    //  We didn't include 'description' here as it's already been used extensively. Removing it will likely introduce bugs
+    //  as it will change method called, but not result in compilation error
+    static std::string retainednames[] = { "hash", "class", "superclass", "isProxy", "debugDescription", "zone", "self", "retain", "release", "autorelease", "retainCount" };
     for (size_t i = 0; i < sizeof(retainednames) / sizeof(retainednames[0]); ++i) {
       if (name.compare(0, retainednames[i].length(), retainednames[i]) == 0) {
         return true;
@@ -422,17 +445,17 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
   string BoxValue(const FieldDescriptor* field, const string& value) {
     switch (GetObjectiveCType(field)) {
       case OBJECTIVECTYPE_INT:
-        return "[NSNumber numberWithInt:" + value + "]";
+        return "@(" + value + ")";
       case OBJECTIVECTYPE_LONG:
-        return "[NSNumber numberWithLongLong:" + value + "]";
+        return "@(" + value + ")";
       case OBJECTIVECTYPE_FLOAT:
-        return "[NSNumber numberWithFloat:" + value + "]";
+        return "@(" + value + ")";
       case OBJECTIVECTYPE_DOUBLE:
-        return "[NSNumber numberWithDouble:" + value + "]";
+        return "@(" + value + ")";
       case OBJECTIVECTYPE_BOOLEAN:
-        return "[NSNumber numberWithBool:" + value + "]";
+        return "@(" + value + ")";
       case OBJECTIVECTYPE_ENUM:
-        return "[NSNumber numberWithInt:" + value + "]";
+        return "@(" + value + ")";
     }
 
     return value;
@@ -537,30 +560,57 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 
  bool isObjectArray(const FieldDescriptor* field){
 	 switch (field->type()) {
-		  case FieldDescriptor::TYPE_STRING  : 
-	      case FieldDescriptor::TYPE_BYTES   : 
-	      case FieldDescriptor::TYPE_ENUM    : 
-	      case FieldDescriptor::TYPE_GROUP   : 
+		  case FieldDescriptor::TYPE_STRING  :
+	      case FieldDescriptor::TYPE_BYTES   :
+	      case FieldDescriptor::TYPE_GROUP   :
 	      case FieldDescriptor::TYPE_MESSAGE : return true;
-	      case FieldDescriptor::TYPE_INT32   : 
+	      case FieldDescriptor::TYPE_ENUM    :
+	      case FieldDescriptor::TYPE_INT32   :
 	      case FieldDescriptor::TYPE_UINT32  :
 	      case FieldDescriptor::TYPE_SINT32  :
 	      case FieldDescriptor::TYPE_FIXED32 :
 	      case FieldDescriptor::TYPE_SFIXED32:
 	      case FieldDescriptor::TYPE_INT64   :
-	      case FieldDescriptor::TYPE_UINT64  : 
-	      case FieldDescriptor::TYPE_SINT64  : 
-	      case FieldDescriptor::TYPE_FIXED64 : 
-	      case FieldDescriptor::TYPE_SFIXED64: 
+	      case FieldDescriptor::TYPE_UINT64  :
+	      case FieldDescriptor::TYPE_SINT64  :
+	      case FieldDescriptor::TYPE_FIXED64 :
+	      case FieldDescriptor::TYPE_SFIXED64:
 	      case FieldDescriptor::TYPE_FLOAT   :
 	      case FieldDescriptor::TYPE_DOUBLE  :
 	      case FieldDescriptor::TYPE_BOOL    : return false  ;
-	      
+
 	    }
 	    GOOGLE_LOG(FATAL) << "Can't get here.";
 	    return NULL;
   }
 
+  bool hasClassSpecificFeature(string classname, const char *featureName) {
+    char * p = ::getenv(featureName);
+    if (p != NULL) {
+        string s(p);
+        std::stringstream ss(s);
+        std::string item;
+        while (std::getline(ss, item, ',')) {
+            if (item == classname) {
+                return true;
+            }
+        }
+    }
+    return false;
+  }
+
+  bool hasPartiallyMerge(string classname) {
+    return hasClassSpecificFeature(classname, "PROTOC_GEN_OBJC_CLASSES_WITH_PARTIALLY_MERGE");
+  }
+  bool hasBuilderClearMethods(string classname) {
+    return hasClassSpecificFeature(classname, "PROTOC_GEN_OBJC_CLASSES_WITH_BUILDER_CLEAR");
+  }
+  bool hasBuilderGetterInHeader(string classname) {
+    return hasClassSpecificFeature(classname, "PROTOC_GEN_OBJC_CLASSES_WITH_BUILDER_GETTERS");
+  }
+  bool isDummyMessage(string classname) {
+    return hasClassSpecificFeature(classname, "PROTOC_GEN_OBJC_DUMMY_MESSAGES");
+  }
 
   // Escape C++ trigraphs by escaping question marks to \?
   string EscapeTrigraphs(const string& to_escape) {

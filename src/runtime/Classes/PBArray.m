@@ -244,6 +244,36 @@ static PBArrayValueTypeInfo PBValueTypes[] =
 	return equal;
 }
 
+- (NSArray*)toNumberArray {
+    NSMutableArray* numbers = [NSMutableArray array];
+    for (NSInteger i=0; i<self.count; ++i) {
+        switch (_valueType) {
+            case PBArrayValueTypeBool:
+                [numbers addObject:@([self boolAtIndex:i])];
+                break;
+            case PBArrayValueTypeInt32:
+                [numbers addObject:@([self int32AtIndex:i])];
+                break;
+            case PBArrayValueTypeUInt32:
+                [numbers addObject:@([self uint32AtIndex:i])];
+                break;
+            case PBArrayValueTypeInt64:
+                [numbers addObject:@([self int64AtIndex:i])];
+                break;
+            case PBArrayValueTypeUInt64:
+                [numbers addObject:@([self uint64AtIndex:i])];
+                break;
+            case PBArrayValueTypeFloat:
+                [numbers addObject:@([self floatAtIndex:i])];
+                break;
+            case PBArrayValueTypeDouble:
+                [numbers addObject:@([self doubleAtIndex:i])];
+                break;
+        }
+    }
+    return numbers;
+}
+
 @end
 
 @implementation PBArray (PBArrayExtended)
