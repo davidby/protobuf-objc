@@ -131,7 +131,7 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
   void EnumFieldGenerator::GenerateBuilderMembersSource(io::Printer* printer) const {
     printer->Print(variables_,
       "- ($classname$_Builder*)set$capitalized_name$:($type$) value {\n"
-      "  BPFAssert($type$IsValidValue(value), @\"The value '%d' is invalid for $type$\", value);\n"
+      "  NSAssert($type$IsValidValue(value), @\"The value '%d' is invalid for $type$\", value);\n"
       "  builder_result.has$capitalized_name$ = YES;\n"
       "  builder_result.$name$ = value;\n"
       "  return self;\n"
